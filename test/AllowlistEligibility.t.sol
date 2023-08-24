@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.19;
 
 import { Test, console2 } from "forge-std/Test.sol";
-import { Module } from "../src/Module.sol";
+import { AllowlistEligibility } from "../src/AllowlistEligibility.sol";
 import { Deploy, DeployPrecompiled } from "../script/Deploy.s.sol";
 import {
   HatsModuleFactory, IHats, deployModuleInstance, deployModuleFactory
 } from "hats-module/utils/DeployFunctions.sol";
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
 
-contract ModuleTest is Deploy, Test {
+contract AllowlistEligibilityTest is Deploy, Test {
   /// @dev Inherit from DeployPrecompiled instead of Deploy if working with pre-compiled contracts
 
   /// @dev variables inhereted from Deploy script
-  // Module public implementation;
+  // AllowlistEligibility public implementation;
   // bytes32 public SALT;
 
   uint256 public fork;
   uint256 public BLOCK_NUMBER = 17_671_864; // deployment block for Hats.sol
   IHats public HATS = IHats(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137); // v1.hatsprotocol.eth
   HatsModuleFactory public factory;
-  Module public instance;
+  AllowlistEligibility public instance;
   bytes public otherImmutableArgs;
   bytes public initArgs;
   uint256 public hatId;
@@ -40,7 +40,7 @@ contract ModuleTest is Deploy, Test {
   }
 }
 
-contract WithInstanceTest is ModuleTest {
+contract WithInstanceTest is AllowlistEligibilityTest {
   function setUp() public virtual override {
     super.setUp();
 
@@ -53,7 +53,8 @@ contract WithInstanceTest is ModuleTest {
     initArgs = abi.encode();
 
     // deploy an instance of the module
-    instance = Module(deployModuleInstance(factory, address(implementation), hatId, otherImmutableArgs, initArgs));
+    instance =
+      AllowlistEligibility(deployModuleInstance(factory, address(implementation), hatId, otherImmutableArgs, initArgs));
   }
 }
 

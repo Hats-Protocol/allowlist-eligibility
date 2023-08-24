@@ -2,10 +2,10 @@
 pragma solidity ^0.8.18;
 
 import { Script, console2 } from "forge-std/Script.sol";
-import { Module } from "../src/Module.sol";
+import { AllowlistEligibility } from "../src/AllowlistEligibility.sol";
 
 contract Deploy is Script {
-  Module public implementation;
+  AllowlistEligibility public implementation;
   bytes32 public SALT = bytes32(abi.encode("change this to the value of your choice"));
 
   // default values
@@ -42,7 +42,7 @@ contract Deploy is Script {
      *       never differs regardless of where its being compiled
      *    2. The provided salt, `SALT`
      */
-    implementation = new Module{ salt: SALT}(_version /* insert constructor args here */);
+    implementation = new AllowlistEligibility{ salt: SALT}(_version /* insert constructor args here */);
 
     vm.stopBroadcast();
 
@@ -60,7 +60,7 @@ contract DeployPrecompiled is Deploy {
     bytes memory args = abi.encode( /* insert constructor args here */ );
 
     /// @dev Load and deploy pre-compiled ir-optimized bytecode.
-    implementation = Module(deployCode("optimized-out/Module.sol/Module.json", args));
+    implementation = AllowlistEligibility(deployCode("optimized-out/Module.sol/Module.json", args));
 
     vm.stopBroadcast();
 
