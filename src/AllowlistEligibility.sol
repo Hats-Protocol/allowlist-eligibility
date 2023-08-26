@@ -14,12 +14,18 @@ error AllowlistEligibility_NotOwner();
 error AllowlistEligibility_NotArbitrator();
 /// @dev Thrown when array args are not the same length
 error AllowlistEligibility_ArrayLengthMismatch();
+/// @dev Thrown if attempting to burn a hat that an account is not wearing
+error AllowlistEligibility_NotWearer();
 
-/// @title AllowlistEligibility
-/// @author spengrah
-/// @author Haberdasher Labs
-/// @notice A Hats Protocol eligibility that allows the owner to add and remove accounts from an allowlist
-/// @dev This contract inherits from HatsEligibilityModule and is designed to deployed as a clone via HatsModuleFactory
+/**
+ * @title AllowlistEligibility
+ * @author spengrah
+ * @author Haberdasher Labs
+ * @notice A Hats Protocol eligibility module that allows the owner to add and remove accounts from an eligibility
+ *         allowlist for a given hat.
+ * @dev This contract inherits from HatsEligibilityModule and is designed to deployed as a clone via HatsModuleFactory.
+ *      It must be set as the eligibility for {hatId} in order to be used.
+ */
 contract AllowlistEligibility is HatsEligibilityModule {
   /*//////////////////////////////////////////////////////////////
                               EVENTS
@@ -42,12 +48,13 @@ contract AllowlistEligibility is HatsEligibilityModule {
                             DATA MODELS
   //////////////////////////////////////////////////////////////*/
 
+  /**
+   * @notice Eligibility and standing data for an account
+   * @param eligible Whether the account is eligible to wear the hat. Defaults to not eligible.
+   * @param badStanding Whether the account is in bad standing for the hat. Defaults to good standing.
+   */
   struct EligibilityData {
-    /// @notice Whether the wearer is eligible for the hat
-    /// @dev Defaults to false, ie not eligible
     bool eligible;
-    /// @notice Whether the wearer is in bad standing
-    /// @dev Defaults to false, ie good standing
     bool badStanding;
   }
 
@@ -78,10 +85,14 @@ contract AllowlistEligibility is HatsEligibilityModule {
    * ----------------------------------------------------------------------+
    */
 
+  /// @notice The hat ID for the owner hat. The wearer(s) of this hat are authorized to add and remove accounts from the
+  /// allowlist
   function OWNER_HAT() public pure returns (uint256) {
     return _getArgUint256(72);
   }
 
+  /// @notice The hat ID for the arbitrator hat. The wearer(s) of this hat are authorized to set the standing for
+  /// accounts.
   function ARBITRATOR_HAT() public pure returns (uint256) {
     return _getArgUint256(104);
   }
@@ -110,8 +121,11 @@ contract AllowlistEligibility is HatsEligibilityModule {
   //////////////////////////////////////////////////////////////*/
 
   /// @inheritdoc HatsModule
-  function setUp(bytes calldata _initData) public override initializer {
-    // decode init data
+  function _setUp(bytes calldata _initData) internal override {
+    // if there are no initial accounts to add, only initialize the clone instance
+    if (_initData.length == 0) return;
+
+    // otherwise, decode init data to look for initial accounts to add
     address[] memory _accounts = abi.decode(_initData, (address[]));
     // add initial accounts to allowlist
     _addAccountsMemory(_accounts);
@@ -145,7 +159,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
   /**
    * @notice Add an account to the allowlist
    * @dev Only callable by a wearer of the OWNER_HAT
-   *   Note: overwrites existing eligibility data for the account
+   *      Does not revert if account is already added; overwrites existing eligibility data for the account
    * @param _account The account to add
    */
   function addAccount(address _account) public onlyOwner {
@@ -157,7 +171,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
   /**
    * @notice Add multiple accounts to the allowlist
    * @dev Only callable by a wearer of the OWNER_HAT
-   *   Note: overwrites existing eligibility data for the accounts
+   *      Does not revert if an account is already added; overwrites existing eligibility data for the account
    * @param _accounts The array of accounts to add
    */
   function addAccounts(address[] calldata _accounts) public onlyOwner {
@@ -174,7 +188,8 @@ contract AllowlistEligibility is HatsEligibilityModule {
   /**
    * @notice Remove an account from the allowlist
    * @dev Only callable by a wearer of the OWNER_HAT
-   *   Note: overwrites existing eligibility data for the account
+   *      Does not revert if account is not yet added
+   *      Revokes the account's hat if they are wearing it, but no burn event will be emitted
    * @param _account The account to remove
    */
   function removeAccount(address _account) public onlyOwner {
@@ -184,9 +199,36 @@ contract AllowlistEligibility is HatsEligibilityModule {
   }
 
   /**
+   * @notice Remove an account from the allowlist and revoke their hat
+   * @dev Only callable by a wearer of the OWNER_HAT
+   *      Will revert if the account is not wearing the hat
+   *      Reverts if the account is not wearing the hat, but other does not revert if account is not yet added
+   * @param _account The account to remove
+   */
+  function removeAccountAndBurnHat(address _account) public onlyOwner {
+    if (!HATS().isWearerOfHat(_account, hatId())) revert AllowlistEligibility_NotWearer();
+
+    EligibilityData storage eligibility = allowlist[_account];
+
+    // remove the account from the allowlist
+    eligibility.eligible = false;
+
+    emit AccountRemoved(_account);
+
+    // burn the hat by setting their eligibility to with the account's current standing
+    HATS().setHatWearerStatus(hatId(), _account, false, !eligibility.badStanding);
+
+    /**
+     * @dev Hats.sol will emit the following events:
+     *   1. ERC1155.TransferSingle (burn)
+     *   2. Hats.WearerStandingChanged (if `eligibility.badStanding` differs from `Hats.badStandings(_account)`)
+     */
+  }
+
+  /**
    * @notice Remove multiple accounts from the allowlist
    * @dev Only callable by a wearer of the OWNER_HAT
-   *   Note: overwrites existing eligibility data for the accounts
+   *      Does not revert if an account is not yet added
    * @param _accounts The array of accounts to remove
    */
   function removeAccounts(address[] calldata _accounts) public onlyOwner {
@@ -203,7 +245,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
   /**
    * @notice Set the standing for an account
    * @dev Only callable by a wearer of the ARBITRATOR_HAT
-   *   Note: overwrites existing standing data for the account
+   *      Does not revert if an account is not yet added
    * @param _account The account to set standing for
    * @param _standing The standing to set
    */
@@ -214,9 +256,33 @@ contract AllowlistEligibility is HatsEligibilityModule {
   }
 
   /**
+   * @notice Puts an account in bad standing and burns their hat
+   * @dev Only callable by a wearer of the ARBITRATOR_HAT
+   *      Reverts if the account is not wearing the hat, but otherwise does not revert if an account is not yet added
+   * @param _account The account to set standing for
+   */
+  function setBadStandingAndBurnHat(address _account) public onlyArbitrator {
+    if (!HATS().isWearerOfHat(_account, hatId())) revert AllowlistEligibility_NotWearer();
+
+    // set to bad standing in this contract
+    allowlist[_account].badStanding = true;
+
+    emit AccountStandingChanged(_account, false);
+
+    // burn the account's hat by setting their eligibility and standing to false
+    HATS().setHatWearerStatus(hatId(), _account, false, false);
+
+    /**
+     * @dev Hats.sol will emit the following events:
+     *   1. ERC1155.TransferSingle (burn)
+     *   2. Hats.WearerStandingChanged (if `Hats.badStandings(_account)==true`)
+     */
+  }
+
+  /**
    * @notice Set the standing for multiple accounts
    * @dev Only callable by a wearer of the ARBITRATOR_HAT
-   *   Note: overwrites existing standing data for the accounts
+   *      Does not revert if an account is not yet added
    * @param _accounts The array of accounts to set standing for
    * @param _standing The array of standings to set, indexed to the accounts array
    */
