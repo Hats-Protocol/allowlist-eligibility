@@ -16,6 +16,8 @@ error AllowlistEligibility_NotArbitrator();
 error AllowlistEligibility_ArrayLengthMismatch();
 /// @dev Thrown if attempting to burn a hat that an account is not wearing
 error AllowlistEligibility_NotWearer();
+/// @dev Thrown if the hat is not mutable
+error AllowlistEligibility_HatNotMutable();
 
 /**
  * @title AllowlistEligibility
@@ -43,6 +45,10 @@ contract AllowlistEligibility is HatsEligibilityModule {
   event AccountStandingChanged(address account, bool standing);
   /// @notice Emitted when multiple accounts' standing are changed
   event AccountsStandingChanged(address[] accounts, bool[] standing);
+  /// @notice Emitted when a new ownerHat is set
+  event OwnerHatSet(uint256 newOwnerHat);
+  /// @notice Emitted when a new arbitratorHat is set
+  event ArbitratorHatSet(uint256 newArbitratorHat);
 
   /*//////////////////////////////////////////////////////////////
                             DATA MODELS
@@ -299,6 +305,18 @@ contract AllowlistEligibility is HatsEligibilityModule {
     emit AccountsStandingChanged(_accounts, _standing);
   }
 
+  function setOwnerHat(uint256 _newOwnerHat) public onlyOwner hatIsMutable {
+    ownerHat = _newOwnerHat;
+
+    emit OwnerHatSet(_newOwnerHat);
+  }
+
+  function setArbitratorHat(uint256 _newArbitratorHat) public onlyOwner hatIsMutable {
+    arbitratorHat = _newArbitratorHat;
+
+    emit ArbitratorHatSet(_newArbitratorHat);
+  }
+
   /*//////////////////////////////////////////////////////////////
                           INTERNAL FUNCTIONS
   //////////////////////////////////////////////////////////////*/
@@ -325,15 +343,20 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /// @notice Reverts if the caller is not wearing the OWNER_HAT.
   modifier onlyOwner() {
-    // if (!HATS().isWearerOfHat(msg.sender, OWNER_HAT())) revert AllowlistEligibility_NotOwner();
     if (!HATS().isWearerOfHat(msg.sender, ownerHat)) revert AllowlistEligibility_NotOwner();
     _;
   }
 
   /// @notice Reverts if the caller is not wearing the ARBITRATOR_HAT.
   modifier onlyArbitrator() {
-    // if (!HATS().isWearerOfHat(msg.sender, ARBITRATOR_HAT())) revert AllowlistEligibility_NotArbitrator();
     if (!HATS().isWearerOfHat(msg.sender, arbitratorHat)) revert AllowlistEligibility_NotArbitrator();
+    _;
+  }
+
+  /// @notice Reverts if the hatid is not mutable
+  modifier hatIsMutable() {
+    (,,,,,,, bool isMutable,) = HATS().viewHat(hatId());
+    if (!isMutable) revert AllowlistEligibility_HatNotMutable();
     _;
   }
 }

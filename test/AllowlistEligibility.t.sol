@@ -7,7 +7,8 @@ import {
   AllowlistEligibility_NotOwner,
   AllowlistEligibility_NotArbitrator,
   AllowlistEligibility_NotWearer,
-  AllowlistEligibility_ArrayLengthMismatch
+  AllowlistEligibility_ArrayLengthMismatch,
+  AllowlistEligibility_HatNotMutable
 } from "../src/AllowlistEligibility.sol";
 import { Deploy, DeployPrecompiled } from "../script/Deploy.s.sol";
 import {
@@ -56,6 +57,8 @@ contract AllowlistEligibilityTest is Deploy, Test {
   event AccountsRemoved(address[] accounts);
   event AccountStandingChanged(address account, bool standing);
   event AccountsStandingChanged(address[] accounts, bool[] standing);
+  event OwnerHatSet(uint256 newOwnerHat);
+  event ArbitratorHatSet(uint256 newArbitratorHat);
 
   // Hats events
   event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 amount);
@@ -537,5 +540,67 @@ contract SetBadStandingAndBurnHat is WithInstanceTest {
 
     stateAssertions(allowed1, true, true);
     moduleAssertions(allowed1, true, true);
+  }
+}
+
+contract SetOwnerHat is WithInstanceTest {
+  function test_owner_mutable() public {
+    uint256 newOwnerHat = 1;
+    vm.expectEmit();
+    emit OwnerHatSet(newOwnerHat);
+
+    vm.prank(owner);
+    instance.setOwnerHat(newOwnerHat);
+  }
+
+  function test_revert_nonOwner_mutable() public {
+    uint256 newOwnerHat = 1;
+    vm.expectRevert(AllowlistEligibility_NotOwner.selector);
+
+    vm.prank(nonWearer);
+    instance.setOwnerHat(newOwnerHat);
+  }
+
+  function test_revert_owner_immutable() public {
+    uint256 newOwnerHat = 1;
+
+    vm.prank(org);
+    HATS.makeHatImmutable(hatToClaim);
+
+    vm.expectRevert(AllowlistEligibility_HatNotMutable.selector);
+
+    vm.prank(owner);
+    instance.setOwnerHat(newOwnerHat);
+  }
+}
+
+contract SetArbitratorHat is WithInstanceTest {
+  function test_owner_mutable() public {
+    uint256 newArbitratorHat = 1;
+    vm.expectEmit();
+    emit ArbitratorHatSet(newArbitratorHat);
+
+    vm.prank(owner);
+    instance.setArbitratorHat(newArbitratorHat);
+  }
+
+  function test_revert_nonOwner_mutable() public {
+    uint256 newArbitratorHat = 1;
+    vm.expectRevert(AllowlistEligibility_NotOwner.selector);
+
+    vm.prank(nonWearer);
+    instance.setArbitratorHat(newArbitratorHat);
+  }
+
+  function test_revert_owner_immutable() public {
+    uint256 newArbitratorHat = 1;
+
+    vm.prank(org);
+    HATS.makeHatImmutable(hatToClaim);
+
+    vm.expectRevert(AllowlistEligibility_HatNotMutable.selector);
+
+    vm.prank(owner);
+    instance.setArbitratorHat(newArbitratorHat);
   }
 }
