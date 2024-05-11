@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// import { console2 } from "forge-std/Test.sol"; // remove before deploy
+// import { console2 } from "forge-std/Test.sol"; // comment out before deploy
 import { HatsEligibilityModule, HatsModule, IHatsEligibility } from "hats-module/HatsEligibilityModule.sol";
 
 /*//////////////////////////////////////////////////////////////
@@ -80,26 +80,20 @@ contract AllowlistEligibility is HatsEligibilityModule {
    * 0       | IMPLEMENTATION    | address | 20      | HatsModule          |
    * 20      | HATS              | address | 20      | HatsModule          |
    * 40      | hatId             | uint256 | 32      | HatsModule          |
-   * 72      | OWNER_HAT         | uint256 | 32      | this                |
-   * 104     | ARBITRATOR_HAT    | uint256 | 32      | this                |
    * ----------------------------------------------------------------------+
    */
-
-  /// @notice The hat ID for the owner hat. The wearer(s) of this hat are authorized to add and remove accounts from the
-  /// allowlist
-  function OWNER_HAT() public pure returns (uint256) {
-    return _getArgUint256(72);
-  }
-
-  /// @notice The hat ID for the arbitrator hat. The wearer(s) of this hat are authorized to set the standing for
-  /// accounts.
-  function ARBITRATOR_HAT() public pure returns (uint256) {
-    return _getArgUint256(104);
-  }
 
   /*//////////////////////////////////////////////////////////////
                             MUTABLE STATE
   //////////////////////////////////////////////////////////////*/
+
+  /// @notice The hat ID for the owner hat. The wearer(s) of this hat are authorized to add and remove accounts from the
+  /// allowlist
+  uint256 public ownerHat;
+
+  /// @notice The hat ID for the arbitrator hat. The wearer(s) of this hat are authorized to set the standing for
+  /// accounts.
+  uint256 public arbitratorHat;
 
   /**
    * @notice The eligibility data for each account
@@ -122,11 +116,16 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /// @inheritdoc HatsModule
   function _setUp(bytes calldata _initData) internal override {
-    // if there are no initial accounts to add, only initialize the clone instance
-    if (_initData.length == 0) return;
+    // if there are no initial accounts to add, only set the owner and arbitrator hats
+    if (_initData.length < 65) {
+      (ownerHat, arbitratorHat) = abi.decode(_initData, (uint256, uint256));
+      return;
+    }
 
-    // otherwise, decode init data to look for initial accounts to add
-    address[] memory _accounts = abi.decode(_initData, (address[]));
+    // otherwise, decode init data to look for hats and initial accounts to add
+    address[] memory _accounts;
+    (ownerHat, arbitratorHat, _accounts) = abi.decode(_initData, (uint256, uint256, address[]));
+
     // add initial accounts to allowlist
     _addAccountsMemory(_accounts);
   }
@@ -326,13 +325,15 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /// @notice Reverts if the caller is not wearing the OWNER_HAT.
   modifier onlyOwner() {
-    if (!HATS().isWearerOfHat(msg.sender, OWNER_HAT())) revert AllowlistEligibility_NotOwner();
+    // if (!HATS().isWearerOfHat(msg.sender, OWNER_HAT())) revert AllowlistEligibility_NotOwner();
+    if (!HATS().isWearerOfHat(msg.sender, ownerHat)) revert AllowlistEligibility_NotOwner();
     _;
   }
 
   /// @notice Reverts if the caller is not wearing the ARBITRATOR_HAT.
   modifier onlyArbitrator() {
-    if (!HATS().isWearerOfHat(msg.sender, ARBITRATOR_HAT())) revert AllowlistEligibility_NotArbitrator();
+    // if (!HATS().isWearerOfHat(msg.sender, ARBITRATOR_HAT())) revert AllowlistEligibility_NotArbitrator();
+    if (!HATS().isWearerOfHat(msg.sender, arbitratorHat)) revert AllowlistEligibility_NotArbitrator();
     _;
   }
 }

@@ -6,7 +6,7 @@ import { AllowlistEligibility } from "../src/AllowlistEligibility.sol";
 
 contract Deploy is Script {
   AllowlistEligibility public implementation;
-  bytes32 public SALT = bytes32(abi.encode("change this to the value of your choice"));
+  bytes32 public SALT = bytes32(abi.encode(0x4a75));
 
   // default values
   bool internal _verbose = true;
@@ -42,7 +42,7 @@ contract Deploy is Script {
      *       never differs regardless of where its being compiled
      *    2. The provided salt, `SALT`
      */
-    implementation = new AllowlistEligibility{ salt: SALT}(_version /* insert constructor args here */);
+    implementation = new AllowlistEligibility{ salt: SALT }(_version /* insert constructor args here */ );
 
     vm.stopBroadcast();
 

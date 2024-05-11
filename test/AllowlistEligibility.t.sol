@@ -91,10 +91,10 @@ contract WithInstanceTest is AllowlistEligibilityTest {
     vm.stopPrank();
 
     // set up the other immutable args
-    otherImmutableArgs = abi.encodePacked(ownerHat, arbitratorHat);
+    otherImmutableArgs = abi.encodePacked();
 
     // set up the init args
-    initArgs = abi.encode();
+    initArgs = abi.encode(ownerHat, arbitratorHat);
 
     // deploy an instance of the module
     instance = AllowlistEligibility(
@@ -129,11 +129,11 @@ contract Deployment is WithInstanceTest {
 
     // implementation
     vm.expectRevert();
-    AllowlistEligibility(implementation).setUp(abi.encode(alloweds));
+    AllowlistEligibility(implementation).setUp(abi.encode(ownerHat, arbitratorHat, alloweds));
 
     // instance
     vm.expectRevert();
-    instance.setUp(abi.encode(alloweds));
+    instance.setUp(abi.encode(ownerHat, arbitratorHat, alloweds));
   }
 
   function test_version() public {
@@ -153,11 +153,11 @@ contract Deployment is WithInstanceTest {
   }
 
   function test_ownerHat() public {
-    assertEq(instance.OWNER_HAT(), ownerHat);
+    assertEq(instance.ownerHat(), ownerHat);
   }
 
   function test_arbitratorHat() public {
-    assertEq(instance.ARBITRATOR_HAT(), arbitratorHat);
+    assertEq(instance.arbitratorHat(), arbitratorHat);
   }
 }
 
