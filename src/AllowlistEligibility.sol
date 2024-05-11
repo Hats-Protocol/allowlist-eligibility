@@ -122,15 +122,28 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /// @inheritdoc HatsModule
   function _setUp(bytes calldata _initData) internal override {
+    uint256 _ownerHat;
+    uint256 _arbitratorHat;
+
     // if there are no initial accounts to add, only set the owner and arbitrator hats
     if (_initData.length < 65) {
-      (ownerHat, arbitratorHat) = abi.decode(_initData, (uint256, uint256));
+      // decode init data to look for hats
+      (_ownerHat, _arbitratorHat) = abi.decode(_initData, (uint256, uint256));
+
+      // set the owner and arbitrator hats
+      _setOwnerHat(_ownerHat);
+      _setArbitratorHat(_arbitratorHat);
+
       return;
     }
 
     // otherwise, decode init data to look for hats and initial accounts to add
     address[] memory _accounts;
-    (ownerHat, arbitratorHat, _accounts) = abi.decode(_initData, (uint256, uint256, address[]));
+    (_ownerHat, _arbitratorHat, _accounts) = abi.decode(_initData, (uint256, uint256, address[]));
+
+    // set the owner and arbitrator hats
+    _setOwnerHat(_ownerHat);
+    _setArbitratorHat(_arbitratorHat);
 
     // add initial accounts to allowlist
     _addAccountsMemory(_accounts);
@@ -305,12 +318,22 @@ contract AllowlistEligibility is HatsEligibilityModule {
     emit AccountsStandingChanged(_accounts, _standing);
   }
 
+  /**
+   * @notice Set a new owner hat
+   * @dev Only callable by a wearer of the current ownerHat, and only if the target hat is mutable
+   * @param _newOwnerHat The new owner hat
+   */
   function setOwnerHat(uint256 _newOwnerHat) public onlyOwner hatIsMutable {
     ownerHat = _newOwnerHat;
 
     emit OwnerHatSet(_newOwnerHat);
   }
 
+  /**
+   * @notice Set a new arbitrator hat
+   * @dev Only callable by a wearer of the current arbitratorHat, and only if the target hat is mutable
+   * @param _newArbitratorHat The new arbitrator hat
+   */
   function setArbitratorHat(uint256 _newArbitratorHat) public onlyOwner hatIsMutable {
     arbitratorHat = _newArbitratorHat;
 
@@ -335,6 +358,26 @@ contract AllowlistEligibility is HatsEligibilityModule {
     }
 
     emit AccountsAdded(_accounts);
+  }
+
+  /**
+   * @dev Set a new owner hat
+   * @param _newOwnerHat The new owner hat
+   */
+  function _setOwnerHat(uint256 _newOwnerHat) public {
+    ownerHat = _newOwnerHat;
+
+    emit OwnerHatSet(_newOwnerHat);
+  }
+
+  /**
+   * @dev Set a new arbitrator hat
+   * @param _newArbitratorHat The new arbitrator hat
+   */
+  function _setArbitratorHat(uint256 _newArbitratorHat) public {
+    arbitratorHat = _newArbitratorHat;
+
+    emit ArbitratorHatSet(_newArbitratorHat);
   }
 
   /*//////////////////////////////////////////////////////////////
