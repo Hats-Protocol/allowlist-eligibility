@@ -8,9 +8,9 @@ import { HatsEligibilityModule, HatsModule, IHatsEligibility } from "hats-module
                             CUSTOM ERRORS
 //////////////////////////////////////////////////////////////*/
 
-/// @dev Thrown when the caller does not wear the `OWNER_HAT`
+/// @dev Thrown when the caller does not wear the `ownerHat`
 error AllowlistEligibility_NotOwner();
-/// @dev Thrown when the caller does not wear the `ARBITRATOR_HAT`
+/// @dev Thrown when the caller does not wear the `arbitratorHat`
 error AllowlistEligibility_NotArbitrator();
 /// @dev Thrown when array args are not the same length
 error AllowlistEligibility_ArrayLengthMismatch();
@@ -176,7 +176,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Add an account to the allowlist
-   * @dev Only callable by a wearer of the OWNER_HAT
+   * @dev Only callable by a wearer of the ownerHat
    *      Does not revert if account is already added; overwrites existing eligibility data for the account
    * @param _account The account to add
    */
@@ -188,7 +188,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Add multiple accounts to the allowlist
-   * @dev Only callable by a wearer of the OWNER_HAT
+   * @dev Only callable by a wearer of the ownerHat
    *      Does not revert if an account is already added; overwrites existing eligibility data for the account
    * @param _accounts The array of accounts to add
    */
@@ -205,7 +205,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Remove an account from the allowlist
-   * @dev Only callable by a wearer of the OWNER_HAT
+   * @dev Only callable by a wearer of the ownerHat
    *      Does not revert if account is not yet added
    *      Revokes the account's hat if they are wearing it, but no burn event will be emitted
    * @param _account The account to remove
@@ -218,7 +218,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Remove an account from the allowlist and revoke their hat
-   * @dev Only callable by a wearer of the OWNER_HAT
+   * @dev Only callable by a wearer of the ownerHat
    *      Will revert if the account is not wearing the hat
    *      Reverts if the account is not wearing the hat, but other does not revert if account is not yet added
    * @param _account The account to remove
@@ -245,7 +245,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Remove multiple accounts from the allowlist
-   * @dev Only callable by a wearer of the OWNER_HAT
+   * @dev Only callable by a wearer of the ownerHat
    *      Does not revert if an account is not yet added
    * @param _accounts The array of accounts to remove
    */
@@ -262,7 +262,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Set the standing for an account
-   * @dev Only callable by a wearer of the ARBITRATOR_HAT
+   * @dev Only callable by a wearer of the arbitratorHat
    *      Does not revert if an account is not yet added
    * @param _account The account to set standing for
    * @param _standing The standing to set
@@ -275,7 +275,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Puts an account in bad standing and burns their hat
-   * @dev Only callable by a wearer of the ARBITRATOR_HAT
+   * @dev Only callable by a wearer of the arbitratorHat
    *      Reverts if the account is not wearing the hat, but otherwise does not revert if an account is not yet added
    * @param _account The account to set standing for
    */
@@ -299,7 +299,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Set the standing for multiple accounts
-   * @dev Only callable by a wearer of the ARBITRATOR_HAT
+   * @dev Only callable by a wearer of the arbitratorHat
    *      Does not revert if an account is not yet added
    * @param _accounts The array of accounts to set standing for
    * @param _standing The array of standings to set, indexed to the accounts array
@@ -384,13 +384,13 @@ contract AllowlistEligibility is HatsEligibilityModule {
                             MODIFERS
   //////////////////////////////////////////////////////////////*/
 
-  /// @notice Reverts if the caller is not wearing the OWNER_HAT.
+  /// @notice Reverts if the caller is not wearing the ownerHat.
   modifier onlyOwner() {
     if (!HATS().isWearerOfHat(msg.sender, ownerHat)) revert AllowlistEligibility_NotOwner();
     _;
   }
 
-  /// @notice Reverts if the caller is not wearing the ARBITRATOR_HAT.
+  /// @notice Reverts if the caller is not wearing the arbitratorHat.
   modifier onlyArbitrator() {
     if (!HATS().isWearerOfHat(msg.sender, arbitratorHat)) revert AllowlistEligibility_NotArbitrator();
     _;
