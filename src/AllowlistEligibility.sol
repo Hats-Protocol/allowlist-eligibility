@@ -331,7 +331,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /**
    * @notice Set a new arbitrator hat
-   * @dev Only callable by a wearer of the current arbitratorHat, and only if the target hat is mutable
+   * @dev Only callable by a wearer of the current ownerHat, and only if the target hat is mutable
    * @param _newArbitratorHat The new arbitrator hat
    */
   function setArbitratorHat(uint256 _newArbitratorHat) public onlyOwner hatIsMutable {
@@ -364,7 +364,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
    * @dev Set a new owner hat
    * @param _newOwnerHat The new owner hat
    */
-  function _setOwnerHat(uint256 _newOwnerHat) public {
+  function _setOwnerHat(uint256 _newOwnerHat) internal {
     ownerHat = _newOwnerHat;
 
     emit OwnerHatSet(_newOwnerHat);
@@ -374,7 +374,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
    * @dev Set a new arbitrator hat
    * @param _newArbitratorHat The new arbitrator hat
    */
-  function _setArbitratorHat(uint256 _newArbitratorHat) public {
+  function _setArbitratorHat(uint256 _newArbitratorHat) internal {
     arbitratorHat = _newArbitratorHat;
 
     emit ArbitratorHatSet(_newArbitratorHat);
