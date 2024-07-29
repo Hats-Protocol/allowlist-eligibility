@@ -114,7 +114,7 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
   /// @notice Deploy the implementation contract and set its version
   /// @dev This is only used to deploy the implementation contract, and should not be used to deploy clones
-  constructor(string memory _version) HatsModule(_version) { }
+  constructor(string memory _version, address _hat, uint256 _hatId) HatsModule(_version, _hat, _hatId) { }
 
   /*//////////////////////////////////////////////////////////////
                             INITIALIZER
