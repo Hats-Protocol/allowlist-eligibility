@@ -10,13 +10,16 @@ import {
   AllowlistEligibility_ArrayLengthMismatch,
   AllowlistEligibility_HatNotMutable
 } from "../src/AllowlistEligibility.sol";
+import { AllowlistEligibilityFactory } from "../src/AllowlistEligibilityFactory.sol";
 import { Deploy, DeployPrecompiled } from "../script/Deploy.s.sol";
-import {
-  HatsModuleFactory, IHats, deployModuleInstance, deployModuleFactory
-} from "hats-module/utils/DeployFunctions.sol";
+// import {
+//   HatsModuleFactory, IHats, deployModuleInstance, deployModuleFactory
+// } from "hats-module/utils/DeployFunctions.sol";
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
+import { Hats } from "hats-protocol/Hats.sol";
+import { HatsModule } from "hats-module/HatsEligibilityModule.sol";
 
-contract AllowlistEligibilityTest is Deploy, Test {
+contract AllowlistEligibilityTest is Test {
   /// @dev Inherit from DeployPrecompiled instead of Deploy if working with pre-compiled contracts
 
   /// @dev variables inhereted from Deploy script
@@ -25,8 +28,10 @@ contract AllowlistEligibilityTest is Deploy, Test {
 
   uint256 public fork;
   uint256 public BLOCK_NUMBER = 17_671_864; // deployment block for Hats.sol
-  IHats public HATS = IHats(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137); // v1.hatsprotocol.eth
-  HatsModuleFactory public factory;
+  string internal constant x = "Hats Protocol v1";
+  string internal constant y = "";
+  IHats public HATS = new Hats{ salt: bytes32(abi.encode(0x4a75)) }(x, y);
+  //HatsModuleFactory public factory;
   AllowlistEligibility public instance;
   bytes public otherImmutableArgs;
   bytes public initArgs;
@@ -64,18 +69,18 @@ contract AllowlistEligibilityTest is Deploy, Test {
   event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 amount);
   event WearerStandingChanged(uint256 hatId, address wearer, bool wearerStanding);
 
-  string public MODULE_VERSION;
+  string public MODULE_VERSION = "0.6.0-zksync";
 
   function setUp() public virtual {
     // create and activate a fork, at BLOCK_NUMBER
-    fork = vm.createSelectFork(vm.rpcUrl("mainnet"), BLOCK_NUMBER);
+    // fork = vm.createSelectFork(vm.rpcUrl("mainnet"), BLOCK_NUMBER);
 
-    // deploy implementation via the script
-    prepare(false, MODULE_VERSION);
-    run();
+    // // deploy implementation via the script
+    // prepare(false, MODULE_VERSION);
+    // run();
 
-    // deploy the hats module factory
-    factory = deployModuleFactory(HATS, SALT, "test factory");
+    // // deploy the hats module factory
+    // factory = deployModuleFactory(HATS, SALT, "test factory");
   }
 }
 
@@ -100,9 +105,8 @@ contract WithInstanceTest is AllowlistEligibilityTest {
     initArgs = abi.encode(ownerHat, arbitratorHat);
 
     // deploy an instance of the module
-    instance = AllowlistEligibility(
-      deployModuleInstance(factory, address(implementation), hatToClaim, otherImmutableArgs, initArgs)
-    );
+	AllowlistEligibilityFactory factory = new AllowlistEligibilityFactory();
+    instance = AllowlistEligibility(factory.deployModule(hatToClaim, address(HATS), initArgs, 1)); 
 
     // set the instance as the hatToClaim's eligibility
     vm.prank(org);
@@ -131,12 +135,12 @@ contract Deployment is WithInstanceTest {
     alloweds[1] = allowed2;
 
     // implementation
-    vm.expectRevert();
-    AllowlistEligibility(implementation).setUp(abi.encode(ownerHat, arbitratorHat, alloweds));
+	AllowlistEligibility module = new AllowlistEligibility(MODULE_VERSION, address(HATS), hatId);
+    module.setUp(abi.encode(ownerHat, arbitratorHat, alloweds));
 
     // instance
-    vm.expectRevert();
-    instance.setUp(abi.encode(ownerHat, arbitratorHat, alloweds));
+    vm.expectRevert(HatsModule.AlreadyInitialized.selector);
+    module.setUp(abi.encode(ownerHat, arbitratorHat, alloweds));
   }
 
   function test_version() public {
@@ -144,7 +148,7 @@ contract Deployment is WithInstanceTest {
   }
 
   function test_implementation() public {
-    assertEq(address(instance.IMPLEMENTATION()), address(implementation));
+    assertEq(address(instance.IMPLEMENTATION()), address(instance));
   }
 
   function test_hats() public {
