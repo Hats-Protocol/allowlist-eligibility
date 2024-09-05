@@ -233,8 +233,9 @@ contract AllowlistEligibility is HatsEligibilityModule {
 
     emit AccountRemoved(_account);
 
-    // burn the hat by setting their eligibility to with the account's current standing
-    HATS().setHatWearerStatus(hatId(), _account, false, !eligibility.badStanding);
+    // Check their eligibility and burn the hat if they are not eligible. We use this pull pattern instead of the push
+    // pattern — i.e. setHatWearerStatus — for compatibility with chained modules.
+    HATS().checkHatWearerStatus(hatId(), _account);
 
     /**
      * @dev Hats.sol will emit the following events:
