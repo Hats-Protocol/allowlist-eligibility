@@ -52,6 +52,7 @@ wrap_comments = true
 
 [rpc_endpoints]
 arbitrum = "https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}"
+base = "https://base-mainnet.infura.io/v3/${INFURA_KEY}"
 celo = "${CELO_RPC}"
 gnosis = "${GC_RPC}"
 local = "http://localhost:8545"
@@ -62,6 +63,7 @@ sepolia = "https://sepolia.infura.io/v3/${INFURA_KEY}"
 
 [etherscan]
 arbitrum = { key = "${ARBISCAN_KEY}", url = "https://api.arbiscan.io/api" }
+base = { key = "${BASESCAN_KEY}", url = "https://api.basescan.org/api" }
 celo = { key = "${CELOSCAN_KEY}", url = "https://api.celoscan.com/api" }
 gnosis = { key = "${GNOSISSCAN_KEY}", url = "https://api.gnosisscan.io/api" }
 mainnet = { key = "${ETHERSCAN_KEY}", url = "https://api.etherscan.io/api" }

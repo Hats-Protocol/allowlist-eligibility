@@ -10,7 +10,7 @@ contract Deploy is Script {
 
   // default values
   bool internal _verbose = true;
-  string internal _version = "0.2.0"; // increment this with each new deployment
+  string internal _version = "0.3.0"; // increment this with each new deployment
 
   /// @dev Override default values, if desired
   function prepare(bool verbose, string memory version) public {
@@ -50,24 +50,6 @@ contract Deploy is Script {
   }
 }
 
-/// @dev Deploy pre-compiled ir-optimized bytecode to a non-deterministic address
-contract DeployPrecompiled is Deploy {
-  /// @dev Update SALT and default values in Deploy contract
-
-  function run() public override {
-    vm.startBroadcast(deployer());
-
-    bytes memory args = abi.encode( /* insert constructor args here */ );
-
-    /// @dev Load and deploy pre-compiled ir-optimized bytecode.
-    implementation = AllowlistEligibility(deployCode("optimized-out/Module.sol/Module.json", args));
-
-    vm.stopBroadcast();
-
-    _log("Precompiled ");
-  }
-}
-
 /* FORGE CLI COMMANDS
 
 ## A. Simulate the deployment locally
@@ -77,10 +59,9 @@ forge script script/Deploy.s.sol -f mainnet
 forge script script/Deploy.s.sol -f mainnet --broadcast --verify
 
 ## C. Fix verification issues (replace values in curly braces with the actual values)
-forge verify-contract --chain-id 1 --num-of-optimizations 1000000 --watch --constructor-args $(cast abi-encode \
- "constructor({args})" "{arg1}" "{arg2}" "{argN}" ) \ 
- --compiler-version v0.8.19 {deploymentAddress} \
- src/{Counter}.sol:{Counter} --etherscan-api-key $ETHERSCAN_KEY
+forge verify-contract --chain-id 11155111 --num-of-optimizations 1000000 --watch --constructor-args $(cast abi-encode \
+ "constructor(string)" "0.3.0" ) --compiler-version v0.8.19 0x80336fb7b6B653686eBe71d2c3ee685b70108B8f \
+ src/AllowlistEligibility.sol:AllowlistEligibility --etherscan-api-key $ETHERSCAN_KEY
 
 ## D. To verify ir-optimized contracts on etherscan...
   1. Run (C) with the following additional flag: `--show-standard-json-input > etherscan.json`
